@@ -42,10 +42,34 @@ export default function Login() {
       });
       const data = await response.json();
 
-      if (data.success) {
+if (data.success) {
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+        // 💡 1. 抓取註冊時填寫的「暱稱/姓名」 (full_name)
+        const nameToSave = data.user?.full_name || data.user?.username || username;
+        
+        // 💡 2. 抓取帳號
+        const usernameToSave = data.user?.username || username;
+        
+        // 💡 3. 抓取身分（順便把 "照護者/家屬" 簡化為 "照護者"）
+        const roleToSave = (data.user?.role || selectedRole) === "blind" ? "視障者" : "照護者";
+
+        // 💡 4. 抓取 User ID (轉換為字串)
+        const userIdToSave = (data.user?.id || data.user?.user_id)?.toString();
+
+        // 寫入 AsyncStorage 供設定頁與修改名稱頁面讀取
+        await AsyncStorage.setItem("userName", nameToSave);         // 大字：暱稱
+        await AsyncStorage.setItem("userAccount", usernameToSave);   // 小字：帳號
+        await AsyncStorage.setItem("userRole", roleToSave);         // 身分標籤
+        
+        if (userIdToSave) {
+          await AsyncStorage.setItem("userId", userIdToSave);       // 🔑 補上這行：寫入 userId！
+        }
+
         router.replace(data.user.role === "blind" ? "/blind" : "/caregiver");
-      } else {
+      }
+
+      else {
         if (data.message.includes("屬於") || data.message.includes("身分")) {
           const actualRoleName = data.message.includes("blind")
             ? "視障者"
